@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vitrine Agro Jlle - Tela do Produtor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { padding: 20px; background: #f5f9f8; }
+    .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+    .header { margin-bottom: 20px; }
+    .produto-card, .pedido-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+    .produto-card img { max-width: 100%; height: 160px; object-fit: cover; border-radius: 6px; }
+    .edit-btn { cursor: pointer; }
+    .estoque-input { width: 70px; }
+    .status-pedido { font-weight: bold; padding: 2px 6px; border-radius: 4px; color: white; }
+    .status-Pendente { background: orange; }
+    .status-Aceito { background: blue; }
+    .status-Rejeitado { background: red; }
+    .status-Cancelado { background: gray; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header text-center">
+      <h1>🧑‍🌾 Vitrine Agro Jlle - Tela do Produtor</h1>
+      <p class="text-muted">Gerencie seus produtos, estoque, formas de pagamento e pedidos</p>
+      <nav class="mb-4">
+        <a href="consumidor.html" class="btn btn-outline-primary btn-sm me-2">Tela do Consumidor</a>
+        <a href="logistica.html" class="btn btn-outline-secondary btn-sm">Tela da Logística</a>
+      </nav>
+    </div>
+
+    <form id="form-produto" class="mb-4">
+      <h4 id="formTitle">Adicionar Produto</h4>
+      <input type="hidden" id="editIndex" value="-1" />
+      <div class="mb-3">
+        <label for="nomeProduto" class="form-label">Nome do Produto</label>
+        <input type="text" class="form-control" id="nomeProduto" required />
+      </div>
+      <div class="mb-3">
+        <label for="descricaoProduto" class="form-label">Descrição</label>
+        <textarea class="form-control" id="descricaoProduto" rows="2" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="precoProduto" class="form-label">Preço (R$)</label>
+        <input type="number" class="form-control" id="precoProduto" step="0.01" min="0" required />
+      </div>
+      <div class="mb-3">
+        <label for="estoqueProduto" class="form-label">Estoque Inicial</label>
+        <input type="number" class="form-control" id="estoqueProduto" min="0" required />
+      </div>
+      <div class="mb-3">
+        <label for="imagemProduto" class="form-label">URL da Imagem</label>
+        <input type="url" class="form-control" id="imagemProduto" placeholder="https://..." />
+      </div>
+
+      <h5>Formas de Pagamento Aceitas</h5>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="pagPix" checked />
+        <label class="form-check-label" for="pagPix">Pix</label>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="pagDinheiro" checked />
+        <label class="form-check-label" for="pagDinheiro">Dinheiro</label>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="pagCartao" />
+        <label class="form-check-label" for="pagCartao">Cartão</label>
+      </div>
+
+      <button type="submit" class="btn btn-success" id="btnSubmit">Adicionar Produto</button>
+      <button type="button" class="btn btn-secondary ms-2 d-none" id="btnCancelarEdit">Cancelar Edição</button>
+    </form>
+
+    <h4>Produtos Cadastrados</h4>
+    <div id="listaProdutos"></div>
+
+    <hr class="my-4" />
+
+    <h4>Pedidos Recebidos</h4>
+    <div id="listaPedidos"></div>
+  </div>
+
+  <script>
+    // Produtos e pedidos locais
+    let produtos = [];
+    let pedidos = [];
+
+    // Elementos
+    const form = document.getElementById("form-produto");
+    const listaProdutos = document.getElementById("listaProdutos");
+    const btnSubmit = document.getElementById("btnSubmit");
+    const btnCancelarEdit = document.getElementById("btnCancelarEdit");
+    const formTitle = document.getElementById("formTitle");
+    const editIndexInput = document.getElementById("editIndex");
+    const listaPedidos = document.getElementById("listaPedidos");
+
+    // Funções produtos
+    function salvarProdutos() {
+      localStorage.setItem("produtosVitrine", JSON.stringify(produtos));
+    }
+
+    function carregarProdutos() {
+      const dados = localStorage.getItem("produtosVitrine");
+      if (dados) produtos = JSON.parse(dados);
+      else produtos = [];
+    }
+
+    function exibirProdutos() {
+      listaProdutos.innerHTML = "";
+      if (produtos.length === 0) {
+        listaProdutos.innerHTML = "<p class='text-muted'>Nenhum produto cadastrado ainda.</p>";
+        return;
+      }
+      produtos.forEach((p, i) => {
+        // cria input estoque editavel
+        const div = document.createElement("div");
+        div.className = "produto-card row align-items-center";
+        div.innerHTML = `
+          <div class="col-md-3">
+            <img src="${p.imagem || 'https://via.placeholder.com/300x200?text=Sem+Imagem'}" alt="${p.nome}" />
+          </div>
+          <div class="col-md-5">
+            <h5>${p.nome}</h5>
+            <p>${p.descricao}</p>
+            <p><strong>Preço: R$ ${parseFloat(p.preco).toFixed(2)}</strong></p>
+            <p>
+              <label>Estoque: 
+                <input type="number" class="estoque-input form-control d-inline-block" min="0" value="${p.estoque}" data-index="${i}" />
+              </label>
+            </p>
+            <p><small>Formas de pagamento: ${p.pagamentos.join(", ")}</small></p>
+          </div>
+          <div class="col-md-4 text-end">
+            <button class="btn btn-primary btn-sm me-1" onclick="editarProduto(${i})">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="removerProduto(${i})">Remover</button>
+          </div>
+        `;
+        listaProdutos.appendChild(div);
+      });
+
+      // Adiciona eventos para inputs de estoque
+      document.querySelectorAll('.estoque-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          let val = parseInt(e.target.value);
+          if (isNaN(val) || val < 0) {
+            alert('Estoque não pode ser negativo.');
+            e.target.value = produtos[idx].estoque;
+            return;
+          }
+          produtos[idx].estoque = val;
+          salvarProdutos();
+        });
+      });
+    }
+
+    function editarProduto(i) {
+      const p = produtos[i];
+      document.getElementById("nomeProduto").value = p.nome;
+      document.getElementById("descricaoProduto").value = p.descricao;
+      document.getElementById("precoProduto").value = p.preco;
+      document.getElementById("estoqueProduto").value = p.estoque;
+      document.getElementById("imagemProduto").value = p.imagem;
+      document.getElementById("pagPix").checked = p.pagamentos.includes("Pix");
+      document.getElementById("pagDinheiro").checked = p.pagamentos.includes("Dinheiro");
+      document.getElementById("pagCartao").checked = p.pagamentos.includes("Cartão");
+      editIndexInput.value = i;
+      formTitle.textContent = "Editar Produto";
+      btnSubmit.textContent = "Salvar Alterações";
+      btnCancelarEdit.classList.remove("d-none");
+    }
+
+    function removerProduto(i) {
+      if (confirm("Tem certeza que deseja remover este produto?")) {
+        // Antes de remover, verificar se há pedidos com esse produto
+        const produtoRemovido = produtos[i];
+        const possuiPedido = pedidos.some(pedido => pedido.itens.some(item => item.nome === produtoRemovido.nome && pedido.status !== 'Cancelado' && pedido.status !== 'Rejeitado'));
+        if (possuiPedido) {
+          alert("Não é possível remover produto que está em pedidos ativos. Cancele os pedidos primeiro.");
+          return;
+        }
+        produtos.splice(i, 1);
+        salvarProdutos();
+        exibirProdutos();
+      }
+    }
+
+    btnCancelarEdit.addEventListener("click", () => {
+      form.reset();
+      editIndexInput.value = -1;
+      formTitle.textContent = "Adicionar Produto";
+      btnSubmit.textContent = "Adicionar Produto";
+      btnCancelarEdit.classList.add("d-none");
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const nome = document.getElementById("nomeProduto").value.trim();
+      const descricao = document.getElementById("descricaoProduto").value.trim();
+      const preco = parseFloat(document.getElementById("precoProduto").value);
+      const estoque = parseInt(document.getElementById("estoqueProduto").value);
+      const imagem = document.getElementById("imagemProduto").value.trim();
+
+      let pagamentos = [];
+      if (document.getElementById("pagPix").checked) pagamentos.push("Pix");
+      if (document.getElementById("pagDinheiro").checked) pagamentos.push("Dinheiro");
+      if (document.getElementById("pagCartao").checked) pagamentos.push("Cartão");
+
+      if (pagamentos.length === 0) {
+        alert("Selecione pelo menos uma forma de pagamento.");
+        return;
+      }
+      if (estoque < 0) {
+        alert("Estoque não pode ser negativo.");
+        return;
+      }
+
+      const novoProduto = { nome, descricao, preco, estoque, imagem, pagamentos };
+      const editIndex = parseInt(editIndexInput.value);
+
+      if (editIndex >= 0) {
+        produtos[editIndex] = novoProduto;
+      } else {
+        produtos.push(novoProduto);
+      }
+
+      salvarProdutos();
+      exibirProdutos();
+      form.reset();
+      editIndexInput.value = -1;
+      formTitle.textContent = "Adicionar Produto";
+      btnSubmit.textContent = "Adicionar Produto";
+      btnCancelarEdit.classList.add("d-none");
+    });
+
+    // Funções pedidos
+    function carregarPedidos() {
+      const dados = localStorage.getItem("pedidosConsumidor");
+      if (dados) pedidos = JSON.parse(dados);
+      else pedidos = [];
+    }
+
+    function salvarPedidos() {
+      localStorage.setItem("pedidosConsumidor", JSON.stringify(pedidos));
+    }
+
+    function exibirPedidos() {
+      carregarPedidos();
+      listaPedidos.innerHTML = "";
+      if (pedidos.length === 0) {
+        listaPedidos.innerHTML = "<p class='text-muted'>Nenhum pedido recebido ainda.</p>";
+        return;
+      }
+      pedidos.forEach((pedido, i) => {
+        // Ajusta a primeira letra para maiúscula e substitui espaços por hífen para classe CSS
+        const statusClass = `status-${pedido.status.charAt(0).toUpperCase() + pedido.status.slice(1).replace(/ /g, "-")}`;
+        const aceitoTexto = pedido.aceito === null ? 'Aguardando decisão' : (pedido.aceito ? 'Aceito' : 'Rejeitado');
+
+        // Botões aceitação e cancelamento para pedidos pendentes ou aceitos
+        const podeModificar = pedido.status === 'Pendente' || pedido.status === 'Aceito';
+        const podeCancelar = pedido.status === 'Pendente' || pedido.status === 'Aceito';
+
+        // Produtos do pedido em lista
+        const itensPedido = pedido.itens.map(item => {
+          return `<li>${item.nome} (Qtd: ${item.quantidade})</li>`;
+        }).join("");
+
+        const div = document.createElement("div");
+        div.className = "pedido-card";
+        div.innerHTML = `
+          <h5>Pedido #${pedido.id}</h5>
+          <p><strong>Cliente:</strong> ${pedido.cliente}</p>
+          <p><strong>Endereço:</strong> ${pedido.endereco ? pedido.endereco : "Endereço não informado"}</p>
+          <p><strong>Itens:</strong></p>
+          <ul>${itensPedido}</ul>
+          <p>Status: <span class="status-pedido ${statusClass}">${pedido.status}</span></p>
+          <div>
+            ${podeModificar ? `<button class="btn btn-success btn-sm me-2" onclick="aceitarPedido(${i})">Aceitar</button>` : ""}
+            ${podeModificar ? `<button class="btn btn-danger btn-sm me-2" onclick="rejeitarPedido(${i})">Rejeitar</button>` : ""}
+            ${podeCancelar ? `<button class="btn btn-warning btn-sm" onclick="cancelarPedido(${i})">Cancelar</button>` : ""}
+          </div>
+        `;
+        listaPedidos.appendChild(div);
+      });
+    }
+
+    function aceitarPedido(i) {
+      const pedido = pedidos[i];
+      if (pedido.status !== 'Pendente') {
+        alert("Só é possível aceitar pedidos pendentes.");
+        return;
+      }
+      // Verifica estoque para todos os itens antes de aceitar
+      let estoqueSuficiente = true;
+      for (const item of pedido.itens) {
+        const prod = produtos.find(p => p.nome === item.nome);
+        if (!prod) {
+          alert(`Produto ${item.nome} não encontrado.`);
+          estoqueSuficiente = false;
+          break;
+        }
+        if (prod.estoque < item.quantidade) {
+          alert(`Estoque insuficiente para o produto ${item.nome}.`);
+          estoqueSuficiente = false;
+          break;
+        }
+      }
+      if (!estoqueSuficiente) return;
+
+      // Deduz estoque
+      for (const item of pedido.itens) {
+        const prod = produtos.find(p => p.nome === item.nome);
+        prod.estoque -= item.quantidade;
+      }
+      pedido.status = 'Aceito';
+      pedido.aceito = true;
+      salvarProdutos();
+      salvarPedidos();
+      exibirProdutos();
+      exibirPedidos();
+    }
+
+    function rejeitarPedido(i) {
+      const pedido = pedidos[i];
+      if (pedido.status !== 'Pendente') {
+        alert("Só é possível rejeitar pedidos pendentes.");
+        return;
+      }
+      pedido.status = 'Rejeitado';
+      pedido.aceito = false;
+      salvarPedidos();
+      exibirPedidos();
+    }
+
+    function cancelarPedido(i) {
+      const pedido = pedidos[i];
+      if (pedido.status === 'Cancelado' || pedido.status === 'Rejeitado') {
+        alert("Pedido já está cancelado ou rejeitado.");
+        return;
+      }
+      // Se pedido aceito, devolver estoque
+      if (pedido.status === 'Aceito') {
+        for (const item of pedido.itens) {
+          const prod = produtos.find(p => p.nome === item.nome);
+          if (prod) {
+            prod.estoque += item.quantidade;
+          }
+        }
+        salvarProdutos();
+      }
+      pedido.status = 'Cancelado';
+      salvarPedidos();
+      exibirProdutos();
+      exibirPedidos();
+    }
+
+    // Inicialização
+    carregarProdutos();
+    carregarPedidos();
+    exibirProdutos();
+    exibirPedidos();
+  </script>
+</body>
+</html>

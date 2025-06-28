@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vitrine Agro Jlle - Logística</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #eef6f5; padding: 20px; }
+    .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+    .pedido-card { border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin-bottom: 16px; background: #fff; }
+    .status-pedido {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      color: white;
+      display: inline-block;
+      text-transform: capitalize;
+    }
+    .status-Pendente { background-color: #6c757d; }
+    .status-Aceito { background-color: #0d6efd; }
+    .status-Rejeitado { background-color: #dc3545; }
+    .status-A_caminho_do_produtor { background-color: #fd7e14; }
+    .status-A_caminho_do_consumidor { background-color: #ffc107; color: black; }
+    .status-Entregue { background-color: #198754; }
+    button { min-width: 130px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚚 Vitrine Agro Jlle - Logística</h1>
+    <nav class="mb-3">
+      <a href="produtor.html" class="btn btn-outline-primary btn-sm me-2">Tela do Produtor</a>
+      <a href="consumidor.html" class="btn btn-outline-secondary btn-sm">Tela do Consumidor</a>
+    </nav>
+
+    <h3>Pedidos</h3>
+    <div id="listaPedidos"></div>
+  </div>
+
+<script>
+  let pedidos = JSON.parse(localStorage.getItem('pedidosConsumidor') || '[]');
+  const listaPedidosDiv = document.getElementById('listaPedidos');
+
+  const enderecoProdutor = "Rua do Produtor, 123, Joinville - SC";
+
+  function salvarPedidos() {
+    localStorage.setItem('pedidosConsumidor', JSON.stringify(pedidos));
+  }
+
+  function exibirPedidos() {
+    pedidos = JSON.parse(localStorage.getItem('pedidosConsumidor') || '[]');
+    listaPedidosDiv.innerHTML = '';
+    if (pedidos.length === 0) {
+      listaPedidosDiv.innerHTML = '<p class="text-muted">Nenhum pedido disponível.</p>';
+      return;
+    }
+
+    pedidos.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'pedido-card';
+
+      const statusClass = p.status ? `status-${p.status.replace(/ /g, "_")}` : 'status-Pendente';
+      const aceitoTexto = p.aceito === null ? 'Aguardando decisão do produtor' : (p.aceito ? 'Aceito' : 'Rejeitado');
+
+      div.innerHTML = `
+        <h5>Pedido #${p.id}</h5>
+        <p><strong>Cliente:</strong> ${p.cliente}</p>
+        <p><strong>Endereço do Cliente:</strong> ${p.enderecoCliente}</p>
+        <p><strong>Endereço do Produtor:</strong> ${enderecoProdutor}</p>
+        <p><strong>Status do Pedido:</strong> <span class="status-pedido ${statusClass}">${p.status}</span></p>
+        <p><strong>Decisão do Produtor:</strong> ${aceitoTexto}</p>
+        <p><strong>Itens:</strong></p>
+        <ul>${p.itens.map(item => `<li>${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)}</li>`).join('')}</ul>
+      `;
+
+      // Botões de ação conforme status
+      if (p.aceito === null) {
+        // Esperando decisão do produtor: botões aceitar e rejeitar
+        const btnAceitar = document.createElement('button');
+        btnAceitar.textContent = 'Aceitar Pedido';
+        btnAceitar.className = 'btn btn-success btn-sm me-2';
+        btnAceitar.onclick = () => {
+          p.aceito = true;
+          p.status = 'Aceito';
+          p.historicoStatus.push({status:'Aceito', data: new Date().toLocaleString()});
+          salvarPedidos();
+          exibirPedidos();
+        };
+
+        const btnRejeitar = document.createElement('button');
+        btnRejeitar.textContent = 'Rejeitar Pedido';
+        btnRejeitar.className = 'btn btn-danger btn-sm';
+        btnRejeitar.onclick = () => {
+          p.aceito = false;
+          p.status = 'Rejeitado';
+          p.historicoStatus.push({status:'Rejeitado', data: new Date().toLocaleString()});
+          salvarPedidos();
+          exibirPedidos();
+        };
+
+        div.appendChild(btnAceitar);
+        div.appendChild(btnRejeitar);
+      } else if (p.aceito) {
+        // Pedido aceito - botão para avançar status entrega
+        const proximosStatus = {
+          "Aceito": "A caminho do produtor",
+          "A caminho do produtor": "A caminho do consumidor",
+          "A caminho do consumidor": "Entregue",
+          "Entregue": null
+        };
+
+        const statusAtual = p.status;
+        const proximoStatus = proximosStatus[statusAtual];
+
+        if (proximoStatus) {
+          const btnAvancar = document.createElement('button');
+          btnAvancar.textContent = `Marcar como '${proximoStatus}'`;
+          btnAvancar.className = 'btn btn-primary btn-sm';
+          btnAvancar.onclick = () => {
+            p.status = proximoStatus;
+            p.historicoStatus.push({status: proximoStatus, data: new Date().toLocaleString()});
+            salvarPedidos();
+            exibirPedidos();
+          };
+          div.appendChild(btnAvancar);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'text-success fw-bold';
+          span.textContent = 'Pedido entregue!';
+          div.appendChild(span);
+        }
+      } else {
+        // Pedido rejeitado
+        const span = document.createElement('span');
+        span.className = 'text-danger fw-bold';
+        span.textContent = 'Pedido rejeitado pelo produtor.';
+        div.appendChild(span);
+      }
+
+      listaPedidosDiv.appendChild(div);
+    });
+  }
+
+  exibirPedidos();
+</script>
+</body>
+</html>

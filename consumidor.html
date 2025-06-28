@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vitrine Agro Jlle - Consumidor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #eef6f5; padding: 20px; }
+    .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+    .produto-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+    .produto-card img { max-width: 100%; height: 160px; object-fit: cover; border-radius: 6px; }
+    .quantidade-input { width: 60px; }
+    .status-pedido {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      color: white;
+      display: inline-block;
+      text-transform: capitalize;
+    }
+    .status-Pendente { background-color: #6c757d; }
+    .status-Aceito { background-color: #0d6efd; }
+    .status-Rejeitado { background-color: #dc3545; }
+    .status-A_caminho_do_produtor { background-color: #fd7e14; }
+    .status-A_caminho_do_consumidor { background-color: #ffc107; color: black; }
+    .status-Entregue { background-color: #198754; }
+    .card { user-select: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4">🛒 Vitrine Agro Jlle - Consumidor</h1>
+    <nav class="mb-3">
+      <a href="produtor.html" class="btn btn-outline-primary btn-sm me-2">Tela do Produtor</a>
+      <a href="logistica.html" class="btn btn-outline-secondary btn-sm">Tela da Logística</a>
+    </nav>
+
+    <h3>Produtos Disponíveis</h3>
+    <div id="listaProdutos" class="row mb-4"></div>
+
+    <h3>Carrinho</h3>
+    <div id="carrinhoContainer">
+      <p id="carrinhoVazio" class="text-muted">Nenhum produto no carrinho.</p>
+      <table class="table table-bordered d-none" id="tabelaCarrinho">
+        <thead>
+          <tr>
+            <th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th><th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="corpoCarrinho"></tbody>
+      </table>
+      <div id="totalContainer" class="d-none text-end">
+        <strong>Total: R$ <span id="totalPreco">0.00</span></strong>
+        <button id="btnFinalizar" class="btn btn-success ms-3">Finalizar Pedido</button>
+      </div>
+    </div>
+
+    <h3 class="mt-5">Pedidos Realizados</h3>
+    <div id="listaPedidos" class="mt-3"></div>
+  </div>
+
+<script>
+  let produtos = JSON.parse(localStorage.getItem('produtosVitrine') || '[]');
+  let carrinho = JSON.parse(localStorage.getItem('carrinhoConsumidor') || '[]');
+  let pedidos = JSON.parse(localStorage.getItem('pedidosConsumidor') || '[]');
+
+  const listaProdutosDiv = document.getElementById('listaProdutos');
+  const carrinhoVazio = document.getElementById('carrinhoVazio');
+  const tabelaCarrinho = document.getElementById('tabelaCarrinho');
+  const corpoCarrinho = document.getElementById('corpoCarrinho');
+  const totalPrecoSpan = document.getElementById('totalPreco');
+  const totalContainer = document.getElementById('totalContainer');
+  const btnFinalizar = document.getElementById('btnFinalizar');
+  const listaPedidosDiv = document.getElementById('listaPedidos');
+
+  function exibirProdutos() {
+    produtos = JSON.parse(localStorage.getItem('produtosVitrine') || '[]'); // atualiza estoque
+    listaProdutosDiv.innerHTML = '';
+    if(produtos.length === 0) {
+      listaProdutosDiv.innerHTML = '<p class="text-muted">Nenhum produto disponível.</p>';
+      return;
+    }
+    produtos.forEach((p, i) => {
+      const col = document.createElement('div');
+      col.className = 'col-md-4';
+      col.innerHTML = `
+        <div class="produto-card">
+          <img src="${p.imagem || 'https://via.placeholder.com/300x200?text=Sem+Imagem'}" alt="${p.nome}" />
+          <h5>${p.nome}</h5>
+          <p>${p.descricao}</p>
+          <p><strong>R$ ${parseFloat(p.preco).toFixed(2)}</strong></p>
+          <p><strong>Estoque disponível: ${p.estoque}</strong></p>
+          <div class="input-group mb-2" style="max-width:120px;">
+            <label class="input-group-text" for="qtd-${i}">Qtd</label>
+            <input type="number" id="qtd-${i}" class="form-control quantidade-input" value="1" min="1" max="${p.estoque}" ${p.estoque === 0 ? 'disabled' : ''}/>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="adicionarAoCarrinho(${i})" ${p.estoque === 0 ? 'disabled' : ''}>Adicionar ao Carrinho</button>
+        </div>
+      `;
+      listaProdutosDiv.appendChild(col);
+    });
+  }
+
+  function adicionarAoCarrinho(i) {
+    const qtdInput = document.getElementById(`qtd-${i}`);
+    let qtd = parseInt(qtdInput.value);
+    if(isNaN(qtd) || qtd < 1) {
+      alert('Quantidade inválida');
+      return;
+    }
+    if(qtd > produtos[i].estoque) {
+      alert('Quantidade superior ao estoque disponível');
+      return;
+    }
+    const produto = produtos[i];
+    let item = carrinho.find(item => item.nome === produto.nome);
+    if(item) {
+      let novaQtd = item.quantidade + qtd;
+      if(novaQtd > produto.estoque) {
+        alert('Quantidade total no carrinho excede estoque disponível');
+        return;
+      }
+      item.quantidade = novaQtd;
+    } else {
+      carrinho.push({
+        nome: produto.nome,
+        preco: parseFloat(produto.preco),
+        quantidade: qtd
+      });
+    }
+    salvarCarrinho();
+    exibirCarrinho();
+  }
+
+  function salvarCarrinho() {
+    localStorage.setItem('carrinhoConsumidor', JSON.stringify(carrinho));
+  }
+
+  function exibirCarrinho() {
+    if(carrinho.length === 0) {
+      carrinhoVazio.style.display = 'block';
+      tabelaCarrinho.classList.add('d-none');
+      totalContainer.classList.add('d-none');
+      return;
+    }
+    carrinhoVazio.style.display = 'none';
+    tabelaCarrinho.classList.remove('d-none');
+    totalContainer.classList.remove('d-none');
+
+    corpoCarrinho.innerHTML = '';
+    let total = 0;
+    carrinho.forEach((item, i) => {
+      const subtotal = item.preco * item.quantidade;
+      total += subtotal;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.nome}</td>
+        <td>${item.quantidade}</td>
+        <td>R$ ${item.preco.toFixed(2)}</td>
+        <td>R$ ${subtotal.toFixed(2)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="removerDoCarrinho(${i})">Remover</button></td>
+      `;
+      corpoCarrinho.appendChild(tr);
+    });
+    totalPrecoSpan.textContent = total.toFixed(2);
+  }
+
+  function removerDoCarrinho(i) {
+    carrinho.splice(i, 1);
+    salvarCarrinho();
+    exibirCarrinho();
+  }
+
+  btnFinalizar.addEventListener('click', () => {
+    if(carrinho.length === 0) {
+      alert('O carrinho está vazio.');
+      return;
+    }
+    const nomeCliente = prompt('Informe seu nome para o pedido:');
+    if(!nomeCliente) return alert('Nome é obrigatório.');
+
+    const enderecoCliente = prompt('Informe seu endereço para entrega:');
+    if(!enderecoCliente) return alert('Endereço é obrigatório.');
+
+    // Verifica estoque antes de criar pedido
+    produtos = JSON.parse(localStorage.getItem('produtosVitrine') || '[]'); // atualizar estoque
+    for(const item of carrinho) {
+      const prod = produtos.find(p => p.nome === item.nome);
+      if(!prod || prod.estoque < item.quantidade) {
+        alert(`Estoque insuficiente para o produto ${item.nome}. Atualize o carrinho.`);
+        return;
+      }
+    }
+
+    // Atualiza o estoque do produtor
+    carrinho.forEach(item => {
+      let prod = produtos.find(p => p.nome === item.nome);
+      prod.estoque -= item.quantidade;
+    });
+    localStorage.setItem('produtosVitrine', JSON.stringify(produtos));
+
+    // Cria pedido
+    const pedido = {
+      id: Date.now(),
+      cliente: nomeCliente,
+      enderecoCliente,
+      itens: JSON.parse(JSON.stringify(carrinho)),
+      status: 'Pendente', // status inicial
+      data: new Date().toLocaleString(),
+      historicoStatus: [{status:'Pendente', data: new Date().toLocaleString()}],
+      aceito: null // null=pending, true=aceito, false=rejeitado
+    };
+
+    pedidos.push(pedido);
+    localStorage.setItem('pedidosConsumidor', JSON.stringify(pedidos));
+
+    // Limpa carrinho
+    carrinho = [];
+    salvarCarrinho();
+    exibirCarrinho();
+    exibirProdutos();
+    exibirPedidos();
+
+    alert('Pedido criado com sucesso! Aguarde a confirmação do produtor.');
+  });
+
+  function exibirPedidos() {
+    pedidos = JSON.parse(localStorage.getItem('pedidosConsumidor') || '[]');
+    listaPedidosDiv.innerHTML = '';
+    if(pedidos.length === 0) {
+      listaPedidosDiv.innerHTML = '<p class="text-muted">Nenhum pedido realizado.</p>';
+      return;
+    }
+    pedidos.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'card mb-3';
+      let aceitoTexto = p.aceito === null ? 'Aguardando confirmação' : (p.aceito ? 'Aceito' : 'Rejeitado');
+      let statusClass = 'status-Pendente';
+      if(p.status) statusClass = `status-${p.status.replace(/ /g,"_")}`;
+
+      div.innerHTML = `
+        <div class="card-body">
+          <h5 class="card-title">Pedido #${p.id}</h5>
+          <p><strong>Cliente:</strong> ${p.cliente}</p>
+          <p><strong>Endereço:</strong> ${p.enderecoCliente}</p>
+          <p><strong>Status do Pedido:</strong> <span class="status-pedido ${statusClass}">${p.status}</span></p>
+          <p><strong>Confirmação do Produtor:</strong> ${aceitoTexto}</p>
+          <p><strong>Data:</strong> ${p.data}</p>
+          <p><strong>Itens:</strong></p>
+          <ul>
+            ${p.itens.map(item => `<li>${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)}</li>`).join('')}
+          </ul>
+          ${p.status === 'Rejeitado' ? '<p class="text-danger"><strong>Pedido rejeitado pelo produtor.</strong></p>' : ''}
+        </div>
+      `;
+      listaPedidosDiv.appendChild(div);
+    });
+  }
+
+  // Inicialização
+  exibirProdutos();
+  exibirCarrinho();
+  exibirPedidos();
+</script>
+</body>
+</html>
