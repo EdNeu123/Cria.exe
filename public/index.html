@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery App - Conectando Produtores e Consumidores</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">🚚 Delivery App</a>
+                <ul class="nav-links">
+                    <li><a href="/login.html">Entrar</a></li>
+                    <li><a href="/register.html">Cadastrar</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Conectando Produtores e Consumidores</h1>
+                <p>A plataforma que aproxima produtores locais dos consumidores, com entrega rápida e eficiente.</p>
+                <div class="hero-actions">
+                    <a href="/register.html" class="btn btn-primary">Começar Agora</a>
+                    <a href="/login.html" class="btn btn-secondary">Já tenho conta</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🌱</div>
+                            <h3>Para Produtores</h3>
+                            <p>Cadastre seus produtos, gerencie estoque e receba pedidos diretamente dos consumidores.</p>
+                            <a href="/register.html?role=producer" class="btn btn-primary">Sou Produtor</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🛒</div>
+                            <h3>Para Consumidores</h3>
+                            <p>Encontre produtos frescos e locais, faça pedidos e receba em casa com rapidez.</p>
+                            <a href="/register.html?role=consumer" class="btn btn-primary">Sou Consumidor</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🚚</div>
+                            <h3>Para Entregadores</h3>
+                            <p>Aceite entregas, gerencie rotas e ganhe dinheiro conectando produtores e consumidores.</p>
+                            <a href="/register.html?role=logistics" class="btn btn-primary">Sou Entregador</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="how-it-works">
+            <div class="container">
+                <h2 class="text-center mb-4">Como Funciona</h2>
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div style="font-size: 2rem; color: #667eea; margin-bottom: 1rem;">1️⃣</div>
+                        <h4>Cadastro</h4>
+                        <p>Produtores cadastram produtos, consumidores criam conta, entregadores se registram.</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div style="font-size: 2rem; color: #667eea; margin-bottom: 1rem;">2️⃣</div>
+                        <h4>Pedido</h4>
+                        <p>Consumidores navegam pelos produtos e fazem pedidos diretamente aos produtores.</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div style="font-size: 2rem; color: #667eea; margin-bottom: 1rem;">3️⃣</div>
+                        <h4>Preparo</h4>
+                        <p>Produtores confirmam e preparam os pedidos, marcando quando estão prontos.</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div style="font-size: 2rem; color: #667eea; margin-bottom: 1rem;">4️⃣</div>
+                        <h4>Entrega</h4>
+                        <p>Entregadores aceitam as entregas e levam os produtos até os consumidores.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="benefits">
+            <div class="container">
+                <h2 class="text-center mb-4">Benefícios</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <h3>🌿 Produtos Frescos</h3>
+                            <p>Direto do produtor para sua mesa, garantindo frescor e qualidade.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <h3>🤝 Economia Local</h3>
+                            <p>Fortalece a economia local conectando produtores e consumidores da região.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <h3>⚡ Entrega Rápida</h3>
+                            <p>Sistema eficiente de logística para entregas rápidas e seguras.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <h3>📱 Fácil de Usar</h3>
+                            <p>Interface intuitiva e responsiva para uma experiência perfeita.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer style="background: rgba(255, 255, 255, 0.1); color: white; text-align: center; padding: 2rem 0; margin-top: 4rem;">
+        <div class="container">
+            <p>&copy; 2024 Delivery App. Todos os direitos reservados.</p>
+            <p>Conectando produtores, consumidores e entregadores.</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Verificar se usuário já está logado e redirecionar
+        document.addEventListener('DOMContentLoaded', function() {
+            if (Auth.isAuthenticated()) {
+                Auth.redirectBasedOnRole();
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Delivery App</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">🚚 Delivery App</a>
+                <ul class="nav-links">
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/register.html">Cadastrar</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="card">
+                <h2>Entrar na sua conta</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha:</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p>Não tem uma conta? <a href="/register.html">Cadastre-se aqui</a></p>
+                </div>
+
+                <div class="text-center mt-3">
+                    <h4>Contas de Teste</h4>
+                    <div class="test-accounts">
+                        <button class="btn btn-secondary" onclick="fillTestAccount('producer')">
+                            Produtor de Teste
+                        </button>
+                        <button class="btn btn-secondary" onclick="fillTestAccount('consumer')">
+                            Consumidor de Teste
+                        </button>
+                        <button class="btn btn-secondary" onclick="fillTestAccount('logistics')">
+                            Entregador de Teste
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Verificar se usuário já está logado
+        document.addEventListener('DOMContentLoaded', function() {
+            if (Auth.isAuthenticated()) {
+                Auth.redirectBasedOnRole();
+            }
+        });
+
+        // Manipular formulário de login
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            const hideLoading = UI.showLoading(submitButton);
+            
+            try {
+                const formData = new FormData(e.target);
+                const email = formData.get('email');
+                const password = formData.get('password');
+                
+                await Auth.login(email, password);
+                
+                UI.showAlert('Login realizado com sucesso!', 'success');
+                
+                // Redirecionar baseado no role do usuário
+                setTimeout(() => {
+                    Auth.redirectBasedOnRole();
+                }, 1000);
+                
+            } catch (error) {
+                UI.showAlert(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Preencher contas de teste
+        function fillTestAccount(role) {
+            const emailField = document.getElementById('email');
+            const passwordField = document.getElementById('password');
+            
+            const testAccounts = {
+                producer: { email: 'joao@fazenda.com', password: '123456' },
+                consumer: { email: 'pedro@email.com', password: '123456' },
+                logistics: { email: 'carlos@entrega.com', password: '123456' }
+            };
+            
+            const account = testAccounts[role];
+            if (account) {
+                emailField.value = account.email;
+                passwordField.value = account.password;
+            }
+        }
+    </script>
+</body>
+</html>
+
